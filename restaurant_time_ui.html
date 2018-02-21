@@ -2,7 +2,6 @@
 
 <head>
   <title>Select the restaurant of your dreams</title>
-  <!--link rel="stylesheet" href="css/style.css"-->
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
@@ -19,18 +18,36 @@
 
   
   <script>
+  
   $(
-    function() { 
-     $( "#datepicker" ).datetimepicker();
-     console.log("from jquery");
+    function() {
+     var datepicker = $( "#datepicker_id" );
+     var restaurant_ranges;
+     datepicker.datetimepicker( {
+       stepMinute: 15,
+       onSelect: function (selectedDateTime){
+         // if they change day or anything this is called (i.e. even early)...
+          var date = datepicker.datetimepicker('getDate');
+          var day_of_week = date.getday(); // day of the week (0-6)
+
+         }
+     });
+     
      $.getJSON("rest_hours.json", function(data){
-       alert(data);
+       restaurant_ranges = parse_restaurant_hours(data);
      });
     }
    )
+   
+   function parse_restaurant_hours(data) {
+     data; // ["name": "Bai Thong Thai Cuisine", "times": ["Mon-Sat 11 am - 11 pm", "Sun 11 am - 10 pm"] ...]
+   
+   
+   }
+   
   </script>
 
-  <p>Date: <input type="text" id="datepicker"></p>
+  <p>Date: <input type="text" id="datepicker_id"></p>
 
 
 </body>

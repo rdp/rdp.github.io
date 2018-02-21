@@ -32,6 +32,8 @@
   <div id="all_restaurants_id">
   
   </div>
+
+  <h4 id="enjoy_id" style="display:none;">Enjoy your meal!</h4>
   
   <script>
   "use strict";
@@ -41,6 +43,7 @@
      var all_restaurant_time_ranges; // propagated later
      datepicker.datetimepicker( {
        stepMinute: 15,
+       pickerTimeFormat: "hh:mm tt",
        onSelect: function (selectedDateTime){
          // if they change to a new day or anything this is called (i.e. multiple times) ...
           var date = datepicker.datetimepicker('getDate');
@@ -73,7 +76,7 @@
        restaurant_div.innerHTML = restaurant.name + "<br/>(" + restaurant.times + ")";
        restaurant_div.id =  "restaurant_" + i;
        $( "#all_restaurants_id" ).append(restaurant_div);
-       //$(restaurant_div).hide(); TODO
+       $(restaurant_div).hide();
      }
    }
    
@@ -166,6 +169,7 @@
        var restaurant_time_range = all_restaurant_time_ranges[idx];
        showRestaurantIfWorks(restaurant_time_range, dayDesired, minuteDesired, idx);
      }
+     $("#enjoy_id").show();
    }
 
    function showRestaurantIfWorks(restaurant_time_range, dayDesired, minuteDesired, idx) {

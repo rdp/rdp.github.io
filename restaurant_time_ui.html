@@ -16,6 +16,14 @@
 
   <h2>Select the restaurant of your dreams...</h2>
 
+  <style>
+    .has_border 
+     { border:1px solid black; }
+  </style>
+  
+  <div id="all_restaurants_id">
+  
+  </div>
   
   <script>
   "use strict";
@@ -34,6 +42,7 @@
      
      $.getJSON("rest_hours.json", function(data){
        restaurant_time_ranges = parse_all_restaurants(data);
+       create_restaurant_divs(data);
      });
     }
    );
@@ -43,10 +52,20 @@
      // desired output: [ranges: [[day_of_week, start_minute, end_minute], ... ]
      var output = [];
      for(var i=0; i < data.length; i++){
-       output.push(parseSingleRestaurantToRanges(data[i]));
+       var restaurant = data[i];     
+       output.push(parseSingleRestaurantToRanges(restaurant));
      }
+     return output;
+   }
    
-     // TODO add divs for them
+   function create_restaurant_divs(data) {
+     for(var i=0; i < data.length; i++){
+       var restaurant = data[i];
+       var restaurant_div = document.createElement("div");
+       restaurant_div.style.class = "has_border";
+       restaurant_div.innerHTML = "Hello";
+       $( "#all_restaurants_id" ).append(restaurant_div);
+     }
    }
    
    function parseSingleRestaurantToRanges(restaurant) {
@@ -98,7 +117,7 @@
       for(var i = 0; i < numberOfDays; i++) {
         var currentDay = (firstDayOfRange + i) % 7;
         if (end < start) {
-           // goes past midnight
+           // goes past midnight, split into two days
            output.push({day: currentDay, start: start, end: 24*60});
            var nextDay = (firstDayOfRange + i + 1) % 7;
            output.push({day: nextDay, start: 0, end: end});
@@ -146,9 +165,14 @@
      console.assert(parsed == expectedMinutes, {"message": "parsed time wrong", "parsed": parsed, "expected": expectedMinutes, "timeString": timeString});
    }
    
-   function assert_parses_restaurant(restaurantString, expected) {
-     var parsed = parseSingleRestaurantToRanges(restaurantString);
-     console.assert(JSON.stringify(parsed) == JSON.stringify(expected), {"message": "parsed restaurant wrong", "parsed": parsed, "expected": expected, "restaurantString": restaurantString} );
+   function assert_parses_restaurant(restaurantJson, expected) {
+     var parsed = parseSingleRestaurantToRanges(restaurantJson);
+     console.assert(JSON.stringify(parsed) == JSON.stringify(expected), {"message": "parsed restaurant wrong", "parsed": parsed, "expected": expected, "restaurantJson": restaurantJson} );
+   }
+   
+   function assertParsesMultipleRestaurants(restaurantsJson, expected) {
+        var parsed = parse_all_restaurants(restaurantsJson);
+     console.assert(JSON.stringify(parsed) == JSON.stringify(expected), {"message": "parsed multiple restaurants wrong", "parsed": parsed, "expected": expected, "restaurantsJson": restaurantsJson} );
    }
    
    function do_unit_tests() {
@@ -180,16 +204,22 @@
         [{day: 1, start: 11*60+30, end: tenPm}, {day: 2, start: 11*60+30, end: tenPm}, {day: 3, start: 11*60+30, end: tenPm}, {day: 4, start: 11*60+30, end: tenPm}, {day: 0, start: 11*60+30, end: tenPm}, {day: 5, start: 11*60+30, end: (tenPm + 30)}, {day: 6, start: 11*60+30, end: (tenPm + 30)}] 
      );
      
+     var kyotoSushi = [{day: 1, start: 11*60, end: tenPm + 30}, {day: 2, start: 11*60, end: tenPm + 30}, {day: 3, start: 11*60, end: tenPm + 30}, {day: 4, start: 11*60, end: tenPm + 30}, {day: 5, start: 11*60, end: elevenPm}, {day: 6, start: 11*60 + 30, end: elevenPm}, {day: 0, start: 12*60 + 4*60 + 30, end: tenPm + 30}];
      assert_parses_restaurant(
-       {"name": "Kyoto Sushi","times": ["Mon-Thu 11 am - 10:30 pm", "Fri 11 am - 11 pm", "Sat 11:30 am - 11 pm", "Sun 4:30 pm - 10:30 pm"]},
-       [{day: 1, start: 11*60, end: tenPm + 30}, {day: 2, start: 11*60, end: tenPm + 30}, {day: 3, start: 11*60, end: tenPm + 30}, {day: 4, start: 11*60, end: tenPm + 30},
-       {day: 5, start: 11*60, end: elevenPm}, {day: 6, start: 11*60 + 30, end: elevenPm}, {day: 0, start: 12*60 + 4*60 + 30, end: tenPm + 30}]
-       );
+       {"name": "Kyoto Sushi","times": ["Mon-Thu 11 am - 10:30 pm", "Fri 11 am - 11 pm", "Sat 11:30 am - 11 pm", "Sun 4:30 pm - 10:30 pm"]}, kyotoSushi);
    
      assert_parses_restaurant(
-       {"name": "Naan 'N' Curry","times": ["Mon-Tue 11 am - 4 am"]},
-       [{day: 1, start: 11*60, end: 24*60}, {day: 2, start: 0, end: 4*60},{day: 2, start: 11*60, end: 24*60}, {day: 3, start: 0, end: 4*60} ]
+       {"name": "Naan 'N' Curry", "times": ["Mon-Tue 11 am - 4 am"]},
+       [{day: 1, start: 11*60, end: 24*60}, {day: 2, start: 0, end: 4*60}, {day: 2, start: 11*60, end: 24*60}, {day: 3, start: 0, end: 4*60} ]
      );
+     
+     
+     var naanCurry2 = [{day: 6, start: 11*60, end: 24*60}, {day: 0, start: 0, end: 4*60}, {day: 0, start: 11*60, end: 24*60}, {day: 1, start: 0, end: 4*60}, {day: 1, start: 11*60, end: 24*60}, {day: 2, start: 0, end: 4*60} ];
+     assert_parses_restaurant( {"name": "Naan 'N' Curry","times": ["Sat-Mon 11 am - 4 am"]}, naanCurry2);
+     
+     assertParsesMultipleRestaurants(
+         [{"name": "Naan 'N' Curry", "times": ["Sat-Mon 11 am - 4 am"]}, {"name": "Kyoto Sushi", "times": ["Mon-Thu 11 am - 10:30 pm", "Fri 11 am - 11 pm", "Sat 11:30 am - 11 pm", "Sun 4:30 pm - 10:30 pm"]}],
+         [naanCurry2, kyotoSushi])
      
      console.log("done unit tests");
    }
@@ -203,4 +233,4 @@
 
 </body>
 
-</html>
+</html> 

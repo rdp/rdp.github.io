@@ -94,14 +94,15 @@
       // "Mon-Thu, Sun 10 am - 10:30 pm"
       // output: arrays of; ranges
       var whereNumbersStart = day_range.search(/\d/); // only want to split it in 2
-      var allDays = day_range.substring(0, whereNumbersStart - 1); // Mon-Thu, Sun
+      var allDays = day_range.substring(0, whereNumbersStart - 1); // like Mon-Thu, Sun
       var bothTimes = day_range.substring(whereNumbersStart); // 10 am - 10:30 pm (always a single dash, phew)
       var start = hourOfDayToMinutes(bothTimes.split(" - ")[0]);
       var end = hourOfDayToMinutes(bothTimes.split(" - ")[1]);
       
       var output = [];
       for (let dateRange of allDays.split(", ")) {
-        output = output.concat(handleContiguousDays(dateRange, start, end));
+        var multipleDaysWorth = handleContiguousDays(dateRange, start, end);
+        output = output.concat(multipleDaysWorth);
       }
       return output;
     }
@@ -159,24 +160,30 @@
    
    function new_date_input_selected(date, all_restaurant_time_ranges) {
      var dayDesired = date.getDay(); // day of the week (0 is sunday)
-     var minuteDesired = date.getHours * 60 + date.getMinutes();
+     var minuteDesired = date.getHours() * 60 + date.getMinutes();
      
-     all_restaurant_time_ranges.forEach(function(restaurant_time_range, index) {
-       var restaurantWorks = false;
-       for (let time_range of restaurant_time_range) {
-         if (time_range.day == dayDesired && minuteDesired >= time_range.start && minuteDesired < time_range.end) {
-           restaurantWorks = true;
-           break;
-         }
+     for(var idx = 0; idx < all_restaurant_time_ranges.length; idx++){
+       var restaurant_time_range = all_restaurant_time_ranges[idx];
+       showRestaurantIfWorks(restaurant_time_range, dayDesired, minuteDesired, idx);
+     }
+   }
+
+   function showRestaurantIfWorks(restaurant_time_range, dayDesired, minuteDesired, idx) {
+     var restaurantWorks = false;
+     for (let time_range of restaurant_time_range) {
+       if (time_range.day == dayDesired && minuteDesired >= time_range.start && minuteDesired < time_range.end) {
+         restaurantWorks = true;
+         break;
        }
-       var id =  "restaurant_" + index;
-       var restaurant_element = $( "#" + id );
-       if (restaurantWorks) {
-         restaurant_element.show();
-       } else {
-         restaurant_element.hide();
-       }
-     });
+     }
+     var restaurant_element = $("#restaurant_" + idx);
+     console.log("restaurant " + idx + " works=" + restaurantWorks);
+     if (restaurantWorks) {
+       restaurant_element.show();
+     } else {
+       restaurant_element.hide();
+     }
+     return restaurantWorks;
    }
    
    function assert_range_parses(time_range, expected) {
@@ -199,7 +206,7 @@
         var parsed = parse_all_restaurants(restaurantsJson);
      console.assert(JSON.stringify(parsed) == JSON.stringify(expected), {"message": "parsed multiple restaurants wrong", "parsed": parsed, "expected": expected, "restaurantsJson": restaurantsJson} );
    }
-   
+      
    function do_unit_tests() {
      assert_time_parses("12 pm", 12*60);
      assert_time_parses("12 am", 0);
@@ -238,13 +245,24 @@
        [{day: 1, start: 11*60, end: 24*60}, {day: 2, start: 0, end: 4*60}, {day: 2, start: 11*60, end: 24*60}, {day: 3, start: 0, end: 4*60} ]
      );
      
-     
      var naanCurry2 = [{day: 6, start: 11*60, end: 24*60}, {day: 0, start: 0, end: 4*60}, {day: 0, start: 11*60, end: 24*60}, {day: 1, start: 0, end: 4*60}, {day: 1, start: 11*60, end: 24*60}, {day: 2, start: 0, end: 4*60} ];
      assert_parses_restaurant( {"name": "Naan 'N' Curry","times": ["Sat-Mon 11 am - 4 am"]}, naanCurry2);
      
      assertParsesMultipleRestaurants(
          [{"name": "Naan 'N' Curry", "times": ["Sat-Mon 11 am - 4 am"]}, {"name": "Kyoto Sushi", "times": ["Mon-Thu 11 am - 10:30 pm", "Fri 11 am - 11 pm", "Sat 11:30 am - 11 pm", "Sun 4:30 pm - 10:30 pm"]}],
          [naanCurry2, kyotoSushi]);
+     
+     
+    console.assert(showRestaurantIfWorks(naanCurry2, 6, 11*60, 0), "fail Naan");
+    console.assert(showRestaurantIfWorks(naanCurry2, 6, 11*60 + 1, 0), "fail Naan");
+    console.assert(showRestaurantIfWorks(naanCurry2, 6, 24*60 - 1, 0), "fail Naan");
+    console.assert(!showRestaurantIfWorks(naanCurry2, 6, 11*60 - 1, 0), "fail Naan2");
+    console.assert(showRestaurantIfWorks(naanCurry2, 2, 0, 0), "fail Naan2");
+    console.assert(showRestaurantIfWorks(naanCurry2, 2, 10, 0), "fail Naan2"); // 12:10 AM
+    console.assert(!showRestaurantIfWorks(naanCurry2, 2, 4*60,  0), "fail Naan2");
+    console.assert(!showRestaurantIfWorks(naanCurry2, 2, 4*60 + 1, 0), "fail Naan2");
+    console.assert(!showRestaurantIfWorks(kyotoSushi, 1, tenPm + 30, 0), "fail kyoto");
+    console.assert(showRestaurantIfWorks(kyotoSushi, 1, tenPm + 30 - 1, 0), "fail kyoto");
      
      console.log("done unit tests");
    }

@@ -18,32 +18,69 @@
 
   
   <script>
-  
+  "use strict";
   $(
     function() {
      var datepicker = $( "#datepicker_id" );
-     var restaurant_ranges;
+     var restaurant_time_ranges; // propagated later
      datepicker.datetimepicker( {
        stepMinute: 15,
        onSelect: function (selectedDateTime){
-         // if they change day or anything this is called (i.e. even early)...
+         // if they change day or anything this is triggered (i.e. even early)...
           var date = datepicker.datetimepicker('getDate');
-          var day_of_week = date.getday(); // day of the week (0-6)
-
+          new_date_input_selected(date);
          }
      });
      
      $.getJSON("rest_hours.json", function(data){
-       restaurant_ranges = parse_restaurant_hours(data);
+       restaurant_time_ranges = parse_all_restaurants(data);
      });
     }
-   )
+   );
    
-   function parse_restaurant_hours(data) {
-     data; // ["name": "Bai Thong Thai Cuisine", "times": ["Mon-Sat 11 am - 11 pm", "Sun 11 am - 10 pm"] ...]
+   function parse_all_restaurants(data) {
+     // data is ["name": "Bai Thong Thai Cuisine", "times": ["Mon-Sat 11 am - 11 pm", "Sun 11 am - 10 pm"] ...]
+     // desired output: [ranges: [[day_of_week, start_minute, end_minute], ... ]
+     var output = [];
+     for(var i=0; i < data.length; i++){
+       output.push(parse_single_restaurant_to_ranges(data[i]));
+     }
    
-   
+     // TODO add divs for them
    }
+   
+   function parse_single_restaurant_to_ranges(restaurant) {
+     var output = [];
+     var times = restaurant.times;
+     for(var i=0; i < times.length; i++){
+       var time_range = times[i];
+       output.push(parse_single_range(time_range)); // XXXX can it push on multiples?
+     }
+   }
+   
+   function parse_single_range(time_range) {
+      // time: like "Mon-Sat 11 am - 11 pm" "Sun 11 am - 10:30 pm"
+   }
+   
+   function string_week_day_to_int(day) {
+     return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(day); // javascript doesn't seem to have a lightweight way to do this :|
+   }
+   
+   function new_date_input_selected(date) {
+     var day_of_week = date.getDay(); // day of the week (0 is sunday)
+     // TODO ...
+   }
+   
+   function assert_range_parses(time_range, expected) {
+     var parsed = parse_single_range(time_range);
+     console.assert(parsed == expected, {"message": "parsed wrong", "parsed": parsed, "expected": expected});
+   }
+   
+   function do_unit_tests() {
+     //assert_range_parses("Mon 11 am - 11 pm", [)
+   }
+   
+   do_unit_tests();
    
   </script>
 

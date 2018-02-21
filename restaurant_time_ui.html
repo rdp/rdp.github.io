@@ -61,28 +61,43 @@
    function parse_single_range(day_range) {
       // day_range: 
       // "Sun 11 am - 10:30 pm"
-      // "Mon-Thu, Sun 10 am - 10:30 pm"      
       // "Mon-Sat 11 am - 11 pm"
+      // "Mon-Thu, Sun 10 am - 10:30 pm"      
       var whereNumbersStart = day_range.search(/\d/); // only want to split it in 2
-      var days = day_range.substring(0, whereNumbersStart - 1); // Mon-Thu, Sun
+      var allDays = day_range.substring(0, whereNumbersStart - 1); // Mon-Thu, Sun
       var times = day_range.substring(whereNumbersStart); // 10 am - 10:30 pm (always a single dash, phew)
-      var start = timeToMinutes(times.split(" - ")[0]);
-      var end = timeToMinutes(times.split(" - ")[1]);
-      // TODO accomodate wrapping
+      var start = hourOfDayToMinutes(times.split(" - ")[0]);
+      var end = hourOfDayToMinutes(times.split(" - ")[1]);
+      // XXXX accomodate wrapping...
       
-      return [{day: stringToIntWeekDay(days), start: start, end: end}];
+      var daysSplit = allDays.split("-");
+      var output = [];
+      for(var i=0; i < daysSplit.length; i++) {
+        var dayInt = stringToWeekDay(daysSplit[i]);
+        output.push({day: dayInt, start: start, end: end});
+      }
+      return output;
    }
    
-   function timeToMinutes(time) {
-     // like 10:30 pm or 10 am
-     var minutes = 0;
-     if (time.include(":")) {
-       
+   function hourOfDayToMinutes(timeString) { 
+     // like "10 am" or "10:30 pm" (hours never above 12)
+     // based on https://stackoverflow.com/a/2188651/32453 (it was either that or include a library, to be able to handle 12:00 AM right etc. so use this for now...)
+     var time = timeString.match(/(\d+)(:(\d\d))?\s*(p?)/i); 
+
+     var pm = time[4];
+     var hours = parseInt(time[1], 10);
+     if (hours == 12 && !pm) {
+       hours = 0;
      }
-    
+     else {
+      hours += (hours < 12 && pm)? 12 : 0;
+     }
+     
+     var minutes = time[3] ? parseInt(time[3], 10) : 0;
+     return hours * 60 + minutes;
    }
    
-   function stringToIntWeekDay(day) {
+   function stringToWeekDay(day) {
      return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(day); // javascript doesn't seem to have a lightweight way to do this :|
    }
    
@@ -93,11 +108,31 @@
    
    function assert_range_parses(time_range, expected) {
      var parsed = parse_single_range(time_range);
-     console.assert(parsed == expected, {"message": "parsed wrong", "parsed": parsed, "expected": expected});
+     // not sure how to do straight =='s here...
+     console.assert(JSON.stringify(parsed) == JSON.stringify(expected), {"message": "parsed range wrong", "parsed": parsed, "expected": expected} ); 
+   }
+   
+   function assert_time_parses(timeString, expectedMinutes) {
+     var parsed = hourOfDayToMinutes(timeString);
+     console.assert(parsed == expectedMinutes, {"message": "parsed time wrong", "parsed": parsed, "expected": expectedMinutes, "timeString": timeString});
    }
    
    function do_unit_tests() {
-     assert_range_parses("Mon 11 am - 11 pm", [{day: 1, start: (11*60), end: (23*60)}])
+     assert_time_parses("12 pm", 12*60);
+     assert_time_parses("12 am", 0);
+     assert_time_parses("12:30 am", 30);
+     assert_time_parses("1 am", 60);
+     assert_time_parses("1:30 am", 90);
+     assert_time_parses("10 am", 10*60);
+     assert_time_parses("12:30 pm", 12*60 + 30);
+     assert_time_parses("1:00 pm", 13*60);
+     assert_time_parses("1:30 pm", 13*60 + 30);
+     assert_time_parses("11:30 pm", 23*60 + 30);
+     assert_time_parses("11:59 pm", 23*60 + 59);
+     assert_range_parses("Mon 11 am - 11 pm", [{day: 1, start: (11*60), end: (23*60)}]);
+     assert_range_parses("Mon-Tue 11 am - 11 pm", [{day: 1, start: (11*60), end: (23*60)}, {day: 2, start: (11*60), end: (23*60)}]);
+     assert_range_parses("Mon-Wed 11 am - 11 pm", [{day: 1, start: (11*60), end: (23*60)}, {day: 2, start: (11*60), end: (23*60)}, {day: 3, start: (11*60), end: (23*60)}]);
+     console.log("done unit tests");
    }
    
    do_unit_tests();

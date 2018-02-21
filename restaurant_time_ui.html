@@ -71,9 +71,10 @@
       // XXXX accomodate wrapping...
       
       var daysSplit = allDays.split("-");
+      var firstDayOfRange = stringToWeekDay(daysSplit[0]);
+      var lastDayOfRange = daysSplit[1] ? stringToWeekDay(daysSplit[1]) : firstDayOfRange;
       var output = [];
-      for(var i=0; i < daysSplit.length; i++) {
-        var dayInt = stringToWeekDay(daysSplit[i]);
+      for(var dayInt = firstDayOfRange; dayInt <= lastDayOfRange; dayInt++) {
         output.push({day: dayInt, start: start, end: end});
       }
       return output;
@@ -109,7 +110,7 @@
    function assert_range_parses(time_range, expected) {
      var parsed = parse_single_range(time_range);
      // not sure how to do straight =='s here...
-     console.assert(JSON.stringify(parsed) == JSON.stringify(expected), {"message": "parsed range wrong", "parsed": parsed, "expected": expected} ); 
+     console.assert(JSON.stringify(parsed) == JSON.stringify(expected), {"message": "parsed range wrong", "parsed": parsed, "expected": expected, "range": time_range} ); 
    }
    
    function assert_time_parses(timeString, expectedMinutes) {

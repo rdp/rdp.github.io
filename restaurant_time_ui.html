@@ -43,26 +43,28 @@
      // desired output: [ranges: [[day_of_week, start_minute, end_minute], ... ]
      var output = [];
      for(var i=0; i < data.length; i++){
-       output.push(parse_single_restaurant_to_ranges(data[i]));
+       output.push(parseSingleRestaurantToRanges(data[i]));
      }
    
      // TODO add divs for them
    }
    
-   function parse_single_restaurant_to_ranges(restaurant) {
+   function parseSingleRestaurantToRanges(restaurant) {
      var output = [];
      var day_ranges = restaurant.times;
      for(var i=0; i < day_ranges.length; i++){
        var day_range = day_ranges[i];
-       output.push(parseSingleRange(day_range)); // XXXX can it push on multiples?
+       output = output.concat(parseSingleRange(day_range));
      }
+     return output;
    }
    
    function parseSingleRange(day_range) {
       // day_range is:
       // "Sun 11 am - 10:30 pm"
       // "Mon-Sat 11 am - 11 pm"
-      // "Mon-Thu, Sun 10 am - 10:30 pm"      
+      // "Mon-Thu, Sun 10 am - 10:30 pm"
+      // output: arrays of; ranges
       var whereNumbersStart = day_range.search(/\d/); // only want to split it in 2
       var allDays = day_range.substring(0, whereNumbersStart - 1); // Mon-Thu, Sun
       var bothTimes = day_range.substring(whereNumbersStart); // 10 am - 10:30 pm (always a single dash, phew)
@@ -126,6 +128,11 @@
      console.assert(parsed == expectedMinutes, {"message": "parsed time wrong", "parsed": parsed, "expected": expectedMinutes, "timeString": timeString});
    }
    
+   function assert_parses_restaurant(restaurantString, expected) {
+     var parsed = parseSingleRestaurantToRanges(restaurantString);
+     console.assert(JSON.stringify(parsed) == JSON.stringify(expected), {"message": "parsed restaurant wrong", "parsed": parsed, "expected": expected, "restaurantString": restaurantString} );
+   }
+   
    function do_unit_tests() {
      assert_time_parses("12 pm", 12*60);
      assert_time_parses("12 am", 0);
@@ -144,6 +151,12 @@
      assert_range_parses("Mon-Wed 11 am - 11 pm", [{day: 1, start: (11*60), end: elevenPm}, {day: 2, start: (11*60), end: elevenPm}, {day: 3, start: (11*60), end: elevenPm}]);
      assert_range_parses("Mon-Wed, Sun 11 am - 11 pm", [{day: 1, start: (11*60), end: elevenPm}, {day: 2, start: (11*60), end: elevenPm}, {day: 3, start: (11*60), end: elevenPm}, {day: 0, start: (11*60), end: elevenPm}]);
      assert_range_parses("Mon-Wed, Sat 11 am - 11 pm", [{day: 1, start: (11*60), end: elevenPm}, {day: 2, start: (11*60), end: elevenPm}, {day: 3, start: (11*60), end: elevenPm}, {day: 6, start: (11*60), end: elevenPm}]);
+     
+     var tenPm = 22*60;
+     assert_parses_restaurant(
+        {"name": "Cesario's","times": ["Mon-Thu, Sun 11:30 am - 10 pm", "Fri-Sat 11:30 am - 10:30 pm"]}, 
+        [{day: 1, start: 11*60+30, end: tenPm}, {day: 2, start: 11*60+30, end: tenPm}, {day: 3, start: 11*60+30, end: tenPm}, {day: 4, start: 11*60+30, end: tenPm}, {day: 0, start: 11*60+30, end: tenPm}, {day: 5, start: 11*60+30, end: (tenPm + 30)}, {day: 6, start: 11*60+30, end: (tenPm + 30)}] );
+        
      console.log("done unit tests");
    }
    

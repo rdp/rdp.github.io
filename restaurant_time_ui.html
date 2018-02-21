@@ -38,18 +38,18 @@
   $(
     function() {
      var datepicker = $( "#datepicker_id" );
-     var restaurant_time_ranges; // propagated later
+     var all_restaurant_time_ranges; // propagated later
      datepicker.datetimepicker( {
        stepMinute: 15,
        onSelect: function (selectedDateTime){
-         // if they change day or anything this is triggered (i.e. even early)...
+         // if they change to a new day or anything this is called (i.e. multiple times) ...
           var date = datepicker.datetimepicker('getDate');
-          new_date_input_selected(date);
+          new_date_input_selected(date, all_restaurant_time_ranges);
          }
      });
      
      $.getJSON("rest_hours.json", function(data){
-       restaurant_time_ranges = parse_all_restaurants(data);
+       all_restaurant_time_ranges = parse_all_restaurants(data);
        create_restaurant_divs(data);
      });
     }
@@ -59,21 +59,21 @@
      // data is ["name": "Bai Thong Thai Cuisine", "times": ["Mon-Sat 11 am - 11 pm", "Sun 11 am - 10 pm"] ...]
      // desired output: [ranges: [[day_of_week, start_minute, end_minute], ... ]
      var output = [];
-     for(var i=0; i < data.length; i++){
-       var restaurant = data[i];     
+     for (let restaurant of data) {
        output.push(parseSingleRestaurantToRanges(restaurant));
      }
      return output;
    }
    
    function create_restaurant_divs(data) {
-     for(var i=0; i < data.length; i++){
+     for(var i = 0; i < data.length; i++){
        var restaurant = data[i];
        var restaurant_div = document.createElement("div");
        restaurant_div.className = "has_border";
        restaurant_div.innerHTML = restaurant.name + "<br/>(" + restaurant.times + ")";
+       restaurant_div.id =  "restaurant_" + i;
        $( "#all_restaurants_id" ).append(restaurant_div);
-      // $(restaurant_div).hide();
+       //$(restaurant_div).hide(); TODO
      }
    }
    
@@ -98,17 +98,16 @@
       var bothTimes = day_range.substring(whereNumbersStart); // 10 am - 10:30 pm (always a single dash, phew)
       var start = hourOfDayToMinutes(bothTimes.split(" - ")[0]);
       var end = hourOfDayToMinutes(bothTimes.split(" - ")[1]);
-      // XXXX accomodate wrapping...
       
       var output = [];
-      allDays.split(", ").forEach(function(dateRange) {
+      for (let dateRange of allDays.split(", ")) {
         output = output.concat(handleContiguousDays(dateRange, start, end));
-        });
+      }
       return output;
     }
     
     function handleContiguousDays(dateRange, start, end) {
-      // dateRange: Mon-Sat or Sun (Sat-Sun wraps)
+      // dateRange: "Mon-Sat" or "Sun"
       var daysSplit = dateRange.split("-");
       var firstDayOfRange = stringToWeekDay(daysSplit[0]);
       if (daysSplit[1]) {
@@ -158,9 +157,26 @@
      return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(day); // doesn't seem to be a lightweight way to do this...
    }
    
-   function new_date_input_selected(date) {
-     var day_of_week = date.getDay(); // day of the week (0 is sunday)
-     // TODO ...
+   function new_date_input_selected(date, all_restaurant_time_ranges) {
+     var dayDesired = date.getDay(); // day of the week (0 is sunday)
+     var minuteDesired = date.getHours * 60 + date.getMinutes();
+     
+     all_restaurant_time_ranges.forEach(function(restaurant_time_range, index) {
+       var restaurantWorks = false;
+       for (let time_range of restaurant_time_range) {
+         if (time_range.day == dayDesired && minuteDesired >= time_range.start && minuteDesired < time_range.end) {
+           restaurantWorks = true;
+           break;
+         }
+       }
+       var id =  "restaurant_" + index;
+       var restaurant_element = $( "#" + id );
+       if (restaurantWorks) {
+         restaurant_element.show();
+       } else {
+         restaurant_element.hide();
+       }
+     });
    }
    
    function assert_range_parses(time_range, expected) {

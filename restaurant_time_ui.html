@@ -51,18 +51,38 @@
    
    function parse_single_restaurant_to_ranges(restaurant) {
      var output = [];
-     var times = restaurant.times;
-     for(var i=0; i < times.length; i++){
-       var time_range = times[i];
-       output.push(parse_single_range(time_range)); // XXXX can it push on multiples?
+     var day_ranges = restaurant.times;
+     for(var i=0; i < day_ranges.length; i++){
+       var day_range = day_ranges[i];
+       output.push(parse_single_range(day_range)); // XXXX can it push on multiples?
      }
    }
    
-   function parse_single_range(time_range) {
-      // time: like "Mon-Sat 11 am - 11 pm" "Sun 11 am - 10:30 pm"
+   function parse_single_range(day_range) {
+      // day_range: 
+      // "Sun 11 am - 10:30 pm"
+      // "Mon-Thu, Sun 10 am - 10:30 pm"      
+      // "Mon-Sat 11 am - 11 pm"
+      var whereNumbersStart = day_range.search(/\d/); // only want to split it in 2
+      var days = day_range.substring(0, whereNumbersStart - 1); // Mon-Thu, Sun
+      var times = day_range.substring(whereNumbersStart); // 10 am - 10:30 pm (always a single dash, phew)
+      var start = timeToMinutes(times.split(" - ")[0]);
+      var end = timeToMinutes(times.split(" - ")[1]);
+      // TODO accomodate wrapping
+      
+      return [{day: stringToIntWeekDay(days), start: start, end: end}];
    }
    
-   function string_week_day_to_int(day) {
+   function timeToMinutes(time) {
+     // like 10:30 pm or 10 am
+     var minutes = 0;
+     if (time.include(":")) {
+       
+     }
+    
+   }
+   
+   function stringToIntWeekDay(day) {
      return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(day); // javascript doesn't seem to have a lightweight way to do this :|
    }
    
@@ -77,7 +97,7 @@
    }
    
    function do_unit_tests() {
-     //assert_range_parses("Mon 11 am - 11 pm", [)
+     assert_range_parses("Mon 11 am - 11 pm", [{day: 1, start: (11*60), end: (23*60)}])
    }
    
    do_unit_tests();

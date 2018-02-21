@@ -16,9 +16,17 @@
 
   <h2>Select the restaurant of your dreams...</h2>
 
+  
+  <p>Date: <input type="text" id="datepicker_id"></p>
+    
   <style>
     .has_border 
-     { border:1px solid black; }
+     { 
+       border:1px solid black;
+       margin: 5px;
+       padding: 5px;
+
+     }
   </style>
   
   <div id="all_restaurants_id">
@@ -62,9 +70,10 @@
      for(var i=0; i < data.length; i++){
        var restaurant = data[i];
        var restaurant_div = document.createElement("div");
-       restaurant_div.style.class = "has_border";
-       restaurant_div.innerHTML = "Hello";
+       restaurant_div.className = "has_border";
+       restaurant_div.innerHTML = restaurant.name + "<br/>(" + restaurant.times + ")";
        $( "#all_restaurants_id" ).append(restaurant_div);
+      // $(restaurant_div).hide();
      }
    }
    
@@ -219,7 +228,7 @@
      
      assertParsesMultipleRestaurants(
          [{"name": "Naan 'N' Curry", "times": ["Sat-Mon 11 am - 4 am"]}, {"name": "Kyoto Sushi", "times": ["Mon-Thu 11 am - 10:30 pm", "Fri 11 am - 11 pm", "Sat 11:30 am - 11 pm", "Sun 4:30 pm - 10:30 pm"]}],
-         [naanCurry2, kyotoSushi])
+         [naanCurry2, kyotoSushi]);
      
      console.log("done unit tests");
    }
@@ -227,10 +236,6 @@
    do_unit_tests();
    
   </script>
-
-  <p>Date: <input type="text" id="datepicker_id"></p>
-
-
 </body>
 
 </html> 
